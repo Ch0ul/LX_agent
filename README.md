@@ -93,7 +93,7 @@ Test-Path "$RTL_ROOT\rtl_top_list.tcl"
 
 如果出现false，即不存在，先生成TCL文件。
 
-::: {.scroll-box style="max-height:400px;overflow-y:auto;border:1px solid #ccc;padding:10px"}
+
 ``` powershell
 # ==========================
 # 基础检查
@@ -323,7 +323,7 @@ Get-Content $topTcl
 Write-Host ""
 Write-Host "TCL生成完成"
 ```
-:::
+
 
 ## 3. 确认 TCL 是否正确
 
