@@ -67,7 +67,7 @@ RTL_MANUAL_KNOWLEDGE_WRAPPER_TIMEOUT=10920
 
 ## 变量配置
 
-只需要修改两个个变量：
+只需要在rtl_project_config中修改两个变量：
 
 ``` powershell
 $RTL_ROOT = "<RTL工程根目录>"
