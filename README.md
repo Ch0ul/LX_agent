@@ -67,10 +67,9 @@ RTL_MANUAL_KNOWLEDGE_WRAPPER_TIMEOUT=10920
 
 ## 变量配置
 
-只需要修改三个变量：
+只需要修改两个个变量：
 
 ``` powershell
-$LX_AGENT_ROOT = "<智能体根目录>"
 $RTL_ROOT = "<RTL工程根目录>"
 $TOP_MODULE = "<顶层模块名称>"
 ```
@@ -78,7 +77,7 @@ $TOP_MODULE = "<顶层模块名称>"
 ## 1. 进入智能体目录
 
 ``` powershell
-cd $LX_AGENT_ROOT
+cd 项目当前的根目录
 ```
 
 ## 2. 检查TCL文件
@@ -95,235 +94,10 @@ Test-Path "$RTL_ROOT\rtl_top_list.tcl"
 
 
 ``` powershell
-# ==========================
-# 基础检查
-# ==========================
 
-$ProjectRoot = $RTL_ROOT
-$TopModule   = $TOP_MODULE
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force; & ".\run_rtl_manual.ps1"
 
-
-if (!(Test-Path $ProjectRoot)) {
-
-    throw "RTL路径不存在: $ProjectRoot"
-
-}
-
-
-Write-Host ""
-Write-Host "================================"
-Write-Host "RTL工程:" $ProjectRoot
-Write-Host "Top模块:" $TopModule
-Write-Host "================================"
-
-
-
-# ==========================
-# 1. 搜索所有RTL文件
-# ==========================
-
-
-$rtlFiles = @(
-    Get-ChildItem `
-        -Path $ProjectRoot `
-        -Recurse `
-        -File |
-    Where-Object {
-
-        # Verilog/SystemVerilog
-        $_.Extension -in ".v",".sv"
-
-        # 排除测试文件
-        -not ($_.Name -match "_tb\.v$")
-        -not ($_.Name -match "_tb\.sv$")
-        -not ($_.Name -match "^tb_")
-
-        # 排除复制文件
-        -not ($_.Name -match "\(copy\)")
-        -not ($_.Name -match "copy")
-
-    }
-)
-
-
-if ($rtlFiles.Count -eq 0) {
-
-    throw "没有找到任何 .v/.sv RTL 文件"
-
-}
-
-
-Write-Host ""
-Write-Host "发现RTL文件数量:" $rtlFiles.Count
-
-
-
-# ==========================
-# 2. 生成 read_rtl_list.tcl
-# ==========================
-
-
-$rtlList = @(
-    foreach ($file in $rtlFiles) {
-
-        $relative =
-        $file.FullName.Substring(
-            $ProjectRoot.Length + 1
-        )
-
-        $relative.Replace("\","/")
-    }
-)
-
-
-$utf8 = New-Object System.Text.UTF8Encoding($false)
-
-
-$readTcl =
-Join-Path $ProjectRoot "read_rtl_list.tcl"
-
-
-
-[System.IO.File]::WriteAllText(
-    $readTcl,
-    ($rtlList -join "`n"),
-    $utf8
-)
-
-
-Write-Host ""
-Write-Host "生成 read_rtl_list.tcl:"
-Write-Host $readTcl
-
-
-
-# ==========================
-# 3. 自动寻找 Top Module
-# ==========================
-
-
-Write-Host ""
-Write-Host "正在寻找 Top Module:" $TopModule
-
-
-
-$topMatches = @(
-    Select-String `
-    -Path $rtlFiles.FullName `
-    -Pattern (
-        "module\s+" +
-        [regex]::Escape($TopModule) +
-        "\b"
-    )
-)
-
-
-
-if ($topMatches.Count -eq 0) {
-
-    throw "
-未找到 Top Module:
-
-$TopModule
-
-请检查：
-1. TOP_MODULE 是否正确
-2. RTL代码中module名称是否一致
-"
-
-}
-
-
-
-if ($topMatches.Count -gt 1) {
-
-
-    Write-Host ""
-    Write-Host "发现多个同名Top Module:"
-
-
-    $topMatches |
-    ForEach-Object {
-
-        Write-Host $_.Path
-
-    }
-
-
-    throw "
-发现多个Top Module，请人工确认
-"
-
-}
-
-
-
-# ==========================
-# 4. 生成 rtl_top_list.tcl
-# ==========================
-
-
-$topFile = $topMatches[0].Path
-
-
-
-$topRelative =
-$topFile.Substring(
-    $ProjectRoot.Length + 1
-).Replace("\","/")
-
-
-
-$topTcl =
-Join-Path $ProjectRoot "rtl_top_list.tcl"
-
-
-
-[System.IO.File]::WriteAllText(
-    $topTcl,
-    $topRelative,
-    $utf8
-)
-
-
-
-Write-Host ""
-Write-Host "生成 rtl_top_list.tcl:"
-Write-Host $topTcl
-
-
-Write-Host ""
-Write-Host "Top文件:"
-Write-Host $topRelative
-
-
-
-# ==========================
-# 5. TCL最终检查
-# ==========================
-
-
-Write-Host ""
-Write-Host "========== TCL检查 =========="
-
-
-Write-Host ""
-Write-Host "read_rtl_list.tcl 前5行:"
-Get-Content $readTcl |
-Select-Object -First 5
-
-
-
-Write-Host ""
-Write-Host "rtl_top_list.tcl:"
-Get-Content $topTcl
-
-
-
-Write-Host ""
-Write-Host "TCL生成完成"
 ```
-
 
 ## 3. 确认 TCL 是否正确
 
